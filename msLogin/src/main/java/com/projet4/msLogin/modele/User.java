@@ -33,7 +33,7 @@ public class User {
 	@NotBlank
 	@NotNull
 	@Length(min=2, max=30, message="Le nombre de caractères doit être compris entre 2 et 30")
-	private String userName;
+	private String username;
 
 	public void setPassword(String password) {
 		this.password = password;
@@ -47,11 +47,11 @@ public class User {
 	public void setEmail(String email) {
 		this.email = email;
 	}
-	public String getUserName() {
-		return userName;
+	public String getUsername() {
+		return username;
 	}
-	public void setUserName(String userName) {
-		this.userName = userName;
+	public void setUserName(String username) {
+		this.username = username;
 	}
 	public Integer getId() {
 		return id;
