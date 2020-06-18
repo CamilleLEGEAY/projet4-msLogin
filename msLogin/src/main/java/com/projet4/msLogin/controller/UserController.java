@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.projet4.msLogin.dao.UserRepository;
 import com.projet4.msLogin.modele.LoginResponse;
+import com.projet4.msLogin.modele.LoginUpdate;
 import com.projet4.msLogin.service.JwtUtilService;
 import com.projet4.msLogin.modele.Login;
 
@@ -80,7 +81,7 @@ public class UserController {
 	 * @param password
 	 * @return a token and a message
 	 */
-	@PostMapping(path = "/public/User/login")
+	@PostMapping(path = "/public/login")
 	public LoginResponse login(@Valid @RequestBody Login user) throws Exception{
 		LoginResponse loginResponse = new LoginResponse();
 		authenticate(user.getEmail(), user.getPassword());
@@ -90,38 +91,44 @@ public class UserController {
 	
 
 	/**
-	 * to delete an user (only if we get the id in the DB (return it in the token))
-	 * 
-	 * @param id
+	 * to delete an user . find his id from the token
+	 * @param String token
 	 */
 	@DeleteMapping(path = "/supprUser")
-	public void supprimerAssurer(@RequestHeader ServletRequest request) {
-		String requestTokenHeader = request.getParameter("Authorization").substring(7);
-		String subject = jwtUtil.getUsernameFromToken(requestTokenHeader);
+	public String supprimerAssurer(@RequestBody String token) {
+		String subject = jwtUtil.getUsernameFromToken(token.substring(7));
 		userRepository.deleteById(userRepository.findByEmail(subject).get().getId());
+		return "compte supprimé";
 	}
 
 	/**
-	 * to update an user (only if we get the id in the DB (return it in the token))
+	 * to update an user . find his id from the token
 	 * 
 	 * @param id
 	 */
 	@PutMapping(path = "/updateUser")
-	public void updateUser(@RequestBody HttpServletRequest request) {
-		
-		//userRepository.save(user);
+	public String updateUser(@RequestBody LoginUpdate userUpdate) {
+		String subject = jwtUtil.getUsernameFromToken(userUpdate.getToken());
+		Login user = userRepository.findByEmail(subject).get();
+//		if(userUpdate.getPassword()!= null) {
+//			user.setPassword(userUpdate.getPassword());
+//		}
+		if(userUpdate.getUsername()!= null) {
+			user.setUserName(userUpdate.getUsername());
+		}
+		userRepository.save(user);
+		return "compte mis à jour";
 	}
 
 	/**
-	 * to compose a LoginResponse of
+	 * to compose a LoginResponse
 	 * @param user
 	 * @return loginResponse with token
 	 */
 	private LoginResponse createLoginResponse(Login user)throws Exception {
 		LoginResponse loginResponse = new LoginResponse();
-		//recuperer la DB
+		//recuperer dans la DB pour créer un token
 		final UserDetails userDetails = jwtInMemoryUserDetailsService.loadUserByUsername(user.getEmail());
-		//créer un token
 		final String token = jwtUtil.generateToken(userDetails);
 		loginResponse.setToken(token);
 		loginResponse.setMessage("Bonjour " + userDetails.getUsername());

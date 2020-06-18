@@ -28,7 +28,6 @@ public class Login {
 	@Email
 	private String email;
 	
-	@Length(min=2, max=30, message="Le nombre de caractères doit être compris entre 2 et 30")
 	private String username;
 
 	public void setPassword(String password) {
