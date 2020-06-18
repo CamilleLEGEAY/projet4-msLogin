@@ -1,105 +1,144 @@
 package com.projet4.msLogin.controller;
 
-import java.net.URI;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.Date;
-import java.util.List;
+import java.util.Objects;
 
+import javax.servlet.ServletRequest;
+import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import com.projet4.msLogin.dao.UserRepository;
-import com.projet4.msLogin.exception.UserException;
 import com.projet4.msLogin.modele.LoginResponse;
-import com.projet4.msLogin.modele.User;
-
+import com.projet4.msLogin.service.JwtUtilService;
+import com.projet4.msLogin.modele.Login;
 
 @RestController
-@RequestMapping(path="/msLogin")
+@RequestMapping(path = "/msLogin")
 public class UserController {
-	
+
 	@Autowired
 	private UserRepository userRepository;
+
+	@Autowired
+	private PasswordEncoder passwordEncoder;
 	
+	@Autowired
+	private UserDetailsService jwtInMemoryUserDetailsService;
+	
+	@Autowired
+	private JwtUtilService jwtUtil;
+	
+	@Autowired
+	private AuthenticationManager authenticationManager;
+
 	/**
-	 * creat a new user
+	 * to create a new user and login it
 	 * @param user
-	 * @return
+	 * @return a token and a message
 	 */
-	@PostMapping(path="/public/newUser")
-	public LoginResponse createUser(@Valid @RequestBody User user){
-		User userAdd = userRepository.save(user);
-		LoginResponse loginResponse = new LoginResponse();
-		if (userAdd == null) {
-			loginResponse.setMessage("Erreur d'autantification.");
+	@PostMapping(path = "/public/newUser")
+	public LoginResponse createUser(@Valid @RequestBody Login user)throws Exception {
+		LoginResponse loginResponse = new LoginResponse();	
+		String tempEmail = user.getEmail();
+		if (tempEmail != null && !"".equals(tempEmail) && user.getPassword()!=null) {
+			if (userRepository.findByEmail(tempEmail).isPresent()) {
+				loginResponse.setMessage("e-mail already used");
+				//throw new UserException("e-mail already used");
+			} else {
+				Login userAdd = user;
+				userAdd.setPassword(passwordEncoder.encode(user.getPassword()));
+				userAdd = userRepository.save(userAdd);
+				loginResponse = this.createLoginResponse(userAdd);
+			}
+		} else {
+			loginResponse.setMessage("saisie invalide");
+			//throw new UserException("saisie invalide");
 		}
-		loginResponse.setMessage("Bonjour "+user.getUsername());
-		loginResponse.setUsername(user.getUsername());
-		loginResponse.setToken("got it"/*newJWTtoken(user)*/);
-        return loginResponse;
+		return loginResponse;
 	}
+
+
 	/**
 	 * to login an user
 	 * @param email
 	 * @param password
 	 * @return a token and a message
 	 */
-	@PostMapping(path="/public/User/login")  
-	public LoginResponse findByPasswordAndUsername(@Valid @RequestBody User user) {		
-		List<User> oa = userRepository.findByPasswordAndUsername(user.getPassword(), user.getUsername());
+	@PostMapping(path = "/public/User/login")
+	public LoginResponse login(@Valid @RequestBody Login user) throws Exception{
 		LoginResponse loginResponse = new LoginResponse();
-		User userLogged = new User();
-		if (oa.isEmpty()) {
-			loginResponse.setMessage("Vous avez saisi un username ou un mot de passe incorrects");
-			//throw new UserException("Erreur d'autantification");
-		}
-		else {userLogged = oa.get(0);
-		loginResponse.setMessage("Bonjour "+userLogged.getUsername());
-		loginResponse.setUsername(userLogged.getUsername());
-		loginResponse.setToken("got it"/*newJWTtoken(user)*/);
-		}
+		authenticate(user.getEmail(), user.getPassword());
+		loginResponse = this.createLoginResponse(user);	
 		return loginResponse;
 	}
+	
+
 	/**
-	 * to delete an user (only if we get the id in the DB (maybe return it in the token))
+	 * to delete an user (only if we get the id in the DB (return it in the token))
+	 * 
 	 * @param id
 	 */
-	@DeleteMapping(path="/supprUser/{id}")
-	public void supprimerAssurer(@PathVariable Integer id){
-		userRepository.deleteById(id);
+	@DeleteMapping(path = "/supprUser")
+	public void supprimerAssurer(@RequestHeader ServletRequest request) {
+		String requestTokenHeader = request.getParameter("Authorization").substring(7);
+		String subject = jwtUtil.getUsernameFromToken(requestTokenHeader);
+		userRepository.deleteById(userRepository.findByEmail(subject).get().getId());
 	}
+
 	/**
-	 * to update an user (only if we get the id in the DB (maybe return it in the token))
+	 * to update an user (only if we get the id in the DB (return it in the token))
+	 * 
 	 * @param id
 	 */
-	@PutMapping(path="/updateUser")
-	public void modifierAssurer(@RequestBody User user){
-		userRepository.save(user);
+	@PutMapping(path = "/updateUser")
+	public void updateUser(@RequestBody HttpServletRequest request) {
+		
+		//userRepository.save(user);
 	}
+
 	/**
-	 * to generate a token
+	 * to compose a LoginResponse of
+	 * @param user
+	 * @return loginResponse with token
 	 */
-//	private String newJWTtoken(User user) {
-//		String token = Jwts.builder()
-//			    .setClaims("msLogin")
-//			    .setSubject(email)
-//			    .setIssuedAt(Date.from(Instant.now()))
-//			    .setExpiration(Date.from(Instant.now().plus(1, ChronoUnit.MINUTES)))
-//			    .signWith(SignatureAlgorithm.HS256, JWT_SECRET)
-//			    .compact();
-//		return token;
-//	}
+	private LoginResponse createLoginResponse(Login user)throws Exception {
+		LoginResponse loginResponse = new LoginResponse();
+		//recuperer la DB
+		final UserDetails userDetails = jwtInMemoryUserDetailsService.loadUserByUsername(user.getEmail());
+		//créer un token
+		final String token = jwtUtil.generateToken(userDetails);
+		loginResponse.setToken(token);
+		loginResponse.setMessage("Bonjour " + userDetails.getUsername());
+		loginResponse.setUsername(userRepository.findByEmail(user.getEmail()).get().getUsername());
+		return loginResponse;
+	}
+	
+	private void authenticate(String username, String password) throws Exception {
+		Objects.requireNonNull(username);
+		Objects.requireNonNull(password);
+		try {
+			authenticationManager.authenticate(new UsernamePasswordAuthenticationToken(username, password));
+		} catch (DisabledException e) {
+			throw new Exception("USER_DISABLED", e);
+		} catch (BadCredentialsException e) {
+			throw new Exception("INVALID_CREDENTIALS", e);
+		}
+	}
+
 }

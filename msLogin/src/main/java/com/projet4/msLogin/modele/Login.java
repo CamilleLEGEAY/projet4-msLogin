@@ -12,7 +12,7 @@ import javax.validation.constraints.NotNull;
 import org.hibernate.validator.constraints.Length;
 
 @Entity
-public class User {
+public class Login {
 	@Id
 	@GeneratedValue(strategy=GenerationType.AUTO)
 	private Integer id;
@@ -20,7 +20,6 @@ public class User {
 	@NotEmpty
 	@NotBlank
 	@NotNull
-	@Length(min=8, max=15, message="Le nombre de caractères doit être compris entre 8 et 15")
 	private String password;
 	
 	@NotEmpty
@@ -29,9 +28,6 @@ public class User {
 	@Email
 	private String email;
 	
-	@NotEmpty
-	@NotBlank
-	@NotNull
 	@Length(min=2, max=30, message="Le nombre de caractères doit être compris entre 2 et 30")
 	private String username;
 
