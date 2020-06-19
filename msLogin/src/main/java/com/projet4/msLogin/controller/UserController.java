@@ -94,11 +94,12 @@ public class UserController {
 	 * to delete an user . find his id from the token
 	 * @param String token
 	 */
-	@DeleteMapping(path = "/supprUser")
-	public String supprimerAssurer(@RequestBody String token) {
-		String subject = jwtUtil.getUsernameFromToken(token.substring(7));
+	@DeleteMapping(path = "/supprUser/{token}")
+	public LoginResponse supprimerAssurer(@PathVariable String token) {
+		String subject = jwtUtil.getUsernameFromToken(token);
 		userRepository.deleteById(userRepository.findByEmail(subject).get().getId());
-		return "compte supprimé";
+		LoginResponse loginResponse = new LoginResponse(null, "compte supprimé", null);
+		return loginResponse;
 	}
 
 	/**
@@ -110,9 +111,6 @@ public class UserController {
 	public String updateUser(@RequestBody LoginUpdate userUpdate) {
 		String subject = jwtUtil.getUsernameFromToken(userUpdate.getToken());
 		Login user = userRepository.findByEmail(subject).get();
-//		if(userUpdate.getPassword()!= null) {
-//			user.setPassword(userUpdate.getPassword());
-//		}
 		if(userUpdate.getUsername()!= null) {
 			user.setUserName(userUpdate.getUsername());
 		}
