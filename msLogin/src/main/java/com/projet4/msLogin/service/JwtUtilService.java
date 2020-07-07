@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -18,7 +19,9 @@ import io.jsonwebtoken.SignatureAlgorithm;
 public class JwtUtilService {
 	
 	public static final long JWT_TOKEN_VALIDITY = 5*60*60*1000;
-	private String SECRET_KEY ="secret";
+	
+	@Value("${JWT_SECRET}")
+	private String SECRET_KEY;
 	
 	public String getUsernameFromToken(String token) {
 		return getClaimFromToken(token, Claims::getSubject);
