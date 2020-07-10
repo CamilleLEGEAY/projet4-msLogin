@@ -14,6 +14,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -28,7 +29,7 @@ import com.projet4.msLogin.modele.LoginResponse;
 import com.projet4.msLogin.modele.LoginUpdate;
 import com.projet4.msLogin.service.JwtUtilService;
 import com.projet4.msLogin.modele.Login;
-
+@CrossOrigin("*")
 @RestController
 @RequestMapping(path = "/msLogin")
 public class UserController {
