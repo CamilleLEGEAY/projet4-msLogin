@@ -83,7 +83,8 @@ public class UserController {
 	public LoginResponse login(@Valid @RequestBody Login user) throws Exception{
 		LoginResponse loginResponse = new LoginResponse();
 		authenticate(user.getEmail(), user.getPassword());
-		loginResponse = this.createLoginResponse(user);	
+		Login userReponse = userRepository.findByEmail(user.getEmail()).get();
+		loginResponse = this.createLoginResponse(userReponse);	
 		return loginResponse;
 	}
 	
@@ -127,8 +128,8 @@ public class UserController {
 		final UserDetails userDetails = jwtInMemoryUserDetailsService.loadUserByUsername(user.getEmail());
 		final String token = jwtUtil.generateToken(userDetails);
 		loginResponse.setToken(token);
-		loginResponse.setMessage("Bonjour " + userDetails.getUsername());
-		loginResponse.setUsername(userRepository.findByEmail(user.getEmail()).get().getUsername());
+		loginResponse.setMessage("Bonjour " + user.getUsername());
+		loginResponse.setUsername(user.getUsername());
 		return loginResponse;
 	}
 	
