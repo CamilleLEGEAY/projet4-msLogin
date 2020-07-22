@@ -26,10 +26,14 @@ import com.projet4.msLogin.modele.LoginResponse;
 import com.projet4.msLogin.modele.LoginUpdate;
 import com.projet4.msLogin.service.JwtUtilService;
 import com.projet4.msLogin.modele.Login;
-@CrossOrigin("${ORIGINE}")
+@CrossOrigin(origins = "${ORIGINE}")
 @RestController
 @RequestMapping(path = "/msLogin")
 public class UserController {
+	
+	{
+		
+	}
 
 	@Autowired
 	private UserRepository userRepository;
